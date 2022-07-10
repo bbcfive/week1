@@ -41,23 +41,34 @@ describe("SystemOfEquations verifier test", function () {
     });
 
     it("Should return true for correct proof", async function () {
-        //[assignment] Add comments to explain what each line is doing
+        //[assignment] Add comments to explain what each line is doing  
+        // generate the proof and publicSignals according to the solution/coefficient/constants、witness and zkey
         const { proof, publicSignals } = await groth16.fullProve({
+            // represents the solution
             "x": ["15","17","19"],
-            "A": [["1","1","1"],["1","2","3"],["2","-1","1"]],
+            // represents the coefficient
+            "A": [["1","1","1"],["1","2","3"],["2",Fr.e(-1),"1"]],
+            // represents the constants
             "b": ["51", "106", "32"]
-        },
+        },  
             "contracts/bonus/SystemOfEquations/SystemOfEquations_js/SystemOfEquations.wasm","contracts/bonus/SystemOfEquations/circuit_final.zkey");
 
+        // generate solidity parameters by simulating a groth16 verification call
         const calldata = await groth16.exportSolidityCallData(proof, publicSignals);
-    
+
+        // format the calldata for ethers contracts
         const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
-    
+        
+        // get parameter a
         const a = [argv[0], argv[1]];
+        // get parameter b
         const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
+        // get parameter c
         const c = [argv[6], argv[7]];
+        // get parameter input value 
         const Input = argv.slice(8);
 
+        // verify proof with parameters a/b/c and input value that to be true
         expect(await verifier.verifyProof(a, b, c, Input)).to.be.true;
     });
     it("Should return false for invalid proof", async function () {
@@ -65,6 +76,8 @@ describe("SystemOfEquations verifier test", function () {
         let b = [[0, 0], [0, 0]];
         let c = [0, 0];
         let d = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+        // verify proof with parameters a/b/c and d value that to be false
         expect(await verifier.verifyProof(a, b, c, d)).to.be.false;
     });
 });
